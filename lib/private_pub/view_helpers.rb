@@ -1,3 +1,4 @@
+require 'pry'
 module PrivatePub
   module ViewHelpers
     # Publish the given data or block to the client by sending
@@ -6,7 +7,17 @@ module PrivatePub
     # on the client. Otherwise it will be converted to JSON
     # for use in a JavaScript callback.
     def publish_to(channel, data = nil, &block)
-      PrivatePub.publish_to(channel, data || capture(&block))
+      code = capture(&block)
+
+      begin
+        compiled_code = CoffeeScript.compile(code)
+      rescue Exception => e
+        puts "\n\n compile coffee error: #{e.message} \n\n" 
+        # seems to be it's not coffee, so leave this as before
+        compiled_code = code
+      end
+
+      PrivatePub.publish_to(channel, data || compiled_code)
     end
 
     # Subscribe the client to the given channel. This generates
