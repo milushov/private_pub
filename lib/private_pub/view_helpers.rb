@@ -1,4 +1,3 @@
-require 'pry'
 module PrivatePub
   module ViewHelpers
     # Publish the given data or block to the client by sending
