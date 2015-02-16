@@ -21,6 +21,7 @@ module PrivatePub
       yaml = YAML.load_file(filename)[environment.to_s]
       raise ArgumentError, "The #{environment} environment does not exist in #{filename}" if yaml.nil?
       yaml.each { |k, v| config[k.to_sym] = v }
+      config[:ports] = config[:ports].split(' ') if config.key?(:ports)
     end
 
     # Publish the given data to a specific channel. This ends up sending
@@ -31,8 +32,8 @@ module PrivatePub
 
     # Sends the given message hash to the Faye server using Net::HTTP.
     def publish_message(message)
-      raise Error, "No server specified, ensure private_pub.yml was loaded properly." unless config[:server]
-      url = URI.parse(config[:server])
+      raise Error, "No server specified, ensure private_pub.yml was loaded properly." unless config[:hostname]
+      url = URI.parse(server_url)
 
       form = Net::HTTP::Post.new(url.path.empty? ? '/' : url.path)
       form.set_form_data(:message => message.to_json)
@@ -56,7 +57,7 @@ module PrivatePub
     # Returns a subscription hash to pass to the PrivatePub.sign call in JavaScript.
     # Any options passed are merged to the hash.
     def subscription(options = {})
-      sub = {:server => config[:server], :timestamp => (Time.now.to_f * 1000).round}.merge(options)
+      sub = {:server => server_url, :timestamp => (Time.now.to_f * 1000).round}.merge(options)
       sub[:signature] = Digest::SHA1.hexdigest([config[:secret_token], sub[:channel], sub[:timestamp]].join)
       sub
     end
@@ -72,6 +73,13 @@ module PrivatePub
       options = {:mount => "/faye", :timeout => 45, :extensions => [FayeExtension.new]}.merge(options)
       Faye::RackAdapter.new(options)
     end
+
+    # Return server url with random ports
+    def server_url
+      port = config[:ports].sample
+      "#{config[:hostname]}:#{port}#{config[:pathname]}"
+    end
+
   end
 
   reset_config
