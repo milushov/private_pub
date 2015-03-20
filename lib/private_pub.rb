@@ -2,7 +2,6 @@ require "digest/sha1"
 require "net/http"
 require "net/https"
 require "json"
-require 'logger'
 
 require "private_pub/faye_extension"
 require "private_pub/engine" if defined? Rails
@@ -73,7 +72,6 @@ module PrivatePub
     # Any options given are passed to the Faye::RackAdapter.
     def faye_app(options = {})
       options = {:mount => "/faye", :timeout => 45, :extensions => [FayeExtension.new]}.merge(options)
-      Faye.logger = Logger.new(STDOUT)
       Faye::RackAdapter.new(options)
     end
 
